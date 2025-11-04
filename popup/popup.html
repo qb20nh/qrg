@@ -3,14 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Code</title>
+  <title>qrg</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Placeholder for QR code display -->
+  <div class="header">
+    <h1>qrg</h1>
+    <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">
+      <span class="theme-icon">☀️</span>
+    </button>
   </div>
-  <script src="popup.js"></script>
+  <div class="container">
+    <div id="qr-display" class="qr-display">
+      <canvas id="qr-canvas"></canvas>
+    </div>
+    <div id="error-message" class="error-message" style="display: none;"></div>
+  </div>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
 
