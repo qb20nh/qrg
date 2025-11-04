@@ -1,0 +1,72 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Package extension
+        run: |
+          mkdir -p dist
+          zip -r "dist/qrg-v${{ steps.version.outputs.VERSION }}.zip" \
+            manifest.json \
+            background/ \
+            popup/ \
+            shared/ \
+            vendor/ \
+            icons/ \
+            LICENSE \
+            NOTICES \
+            README.md \
+            -x "*.git*" "*.DS_Store"
+      
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## qrg Chrome Extension v${{ steps.version.outputs.VERSION }}
+          
+          ### Installation
+          
+          1. Download `qrg-v${{ steps.version.outputs.VERSION }}.zip`
+          2. Extract the ZIP file
+          3. Open Chrome and go to `chrome://extensions/`
+          4. Enable "Developer mode"
+          5. Click "Load unpacked" and select the extracted folder
+          
+          ### Features
+          
+          - 🔗 Generate QR codes for web pages (http/https URLs)
+          - 🌓 Dark and light theme support
+          - 🎨 Pixel-perfect QR code rendering
+          - ⚡ Fast and lightweight (~4KB QR library)
+          - 🔒 Privacy-focused (no external requests)
+          EOF
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: qrg v${{ steps.version.outputs.VERSION }}
+          body_path: release_notes.md
+          files: dist/qrg-v${{ steps.version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
