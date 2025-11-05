@@ -15,6 +15,18 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+## [1.1.1] - 2025-11-05
+
+### Added
+
+### Changed
+
+Renamed package name for SEO
+
+### Fixed
+
+### Removed
+
 ## [1.1.0] - 2025-11-05
 
 ### Added
