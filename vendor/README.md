@@ -19,10 +19,10 @@ To update the library:
 
 ```powershell
 # Download the latest version
-curl "https://cdn.jsdelivr.net/npm/lean-qr@2.6.0/nano.mjs" -O "lean-qr-nano.mjs"
+curl "https://cdn.jsdelivr.net/npm/lean-qr@2.6.0/nano.mjs" -o "lean-qr-nano.mjs"
 
 # Download the license
-curl "https://raw.githubusercontent.com/davidje13/lean-qr/main/LICENSE" -O "lean-qr-LICENSE"
+curl "https://raw.githubusercontent.com/davidje13/lean-qr/main/LICENSE" -o "lean-qr-LICENSE"
 ```
 
 After updating, remember to update the version number in `NOTICES` and this README.

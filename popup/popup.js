@@ -275,6 +275,16 @@ async function init() {
       showError('No active tab found.');
     }
   });
+
+  // Double requestAnimationFrame to ensure the style is removed after the first paint
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const styleEl = document.getElementById('__remove_on_load');
+      if (styleEl) {
+        styleEl.remove();
+      }
+    });
+  });
 }
 
 // Start initialization when DOM is ready
