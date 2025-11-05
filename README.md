@@ -22,7 +22,9 @@ qrg/
 │   ├── popup.js               # Popup script
 │   └── popup.css              # Popup styles
 ├── shared/                    # Shared modules
-│   └── qr-loader.js           # QR code generation wrapper
+│   ├── config.js              # Centralized config (SSOT for colors & constants)
+│   ├── theme.js               # Theme management (initialization, toggling, CSS vars)
+│   └── qr.js                  # QR code generation wrapper
 ├── vendor/                    # Third-party dependencies
 │   ├── lean-qr-nano.mjs       # QR code library (v2.6.0)
 │   ├── lean-qr-LICENSE        # Library license
@@ -30,7 +32,10 @@ qrg/
 ├── icons/                     # Extension icons
 │   ├── icon-16.png            # Light and dark theme variants
 │   ├── icon-48.png
-│   └── icon-128.png
+│   ├── icon-128.png
+│   ├── light_mode.svg         # Light theme toggle icon
+│   ├── dark_mode.svg          # Dark theme toggle icon
+│   └── download.svg           # Download button icon
 ├── LICENSE                    # MIT License
 ├── NOTICES                    # Third-party attributions
 └── README.md

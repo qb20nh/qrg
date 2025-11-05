@@ -1,26 +1,25 @@
 /**
  * Popup styles for qrg extension
  * Supports light and dark themes with smooth transitions
+ * 
+ * NOTE: Color values are dynamically set by popup.js from shared/config.js (SSOT principle)
+ * All theme colors are defined in: shared/config.js -> LIGHT_THEME_COLORS and DARK_THEME_COLORS
  */
 
 /* ============================================================================
    Theme Variables
+   These are set dynamically from JavaScript using config.js values.
+   The values below are fallback defaults (LIGHT_THEME_COLORS from config.js)
+   and are immediately overwritten by JavaScript on page load.
    ============================================================================ */
 
 :root {
+  /* Light theme fallback values - must match LIGHT_THEME_COLORS in shared/config.js */
   --color-bg: #ffffff;
   --color-text: #333333;
   --color-border: #e0e0e0;
   --color-button-bg: #f5f5f5;
   --color-button-hover: #e8e8e8;
-}
-
-html[data-theme="dark"] {
-  --color-bg: #1e1e1e;
-  --color-text: #e0e0e0;
-  --color-border: #404040;
-  --color-button-bg: #333333;
-  --color-button-hover: #404040;
 }
 
 /* ============================================================================
@@ -65,7 +64,7 @@ body {
 
 .theme-toggle {
   background: var(--color-button-bg);
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
   color: var(--color-text);
   width: 36px;
   height: 36px;
@@ -81,10 +80,77 @@ body {
 
 .theme-toggle:hover {
   background-color: var(--color-button-hover);
+  border-color: var(--color-button-border-hover);
 }
 
 .theme-toggle:active {
   transform: scale(0.95);
+}
+
+.theme-icon {
+  width: 24px;
+  height: 24px;
+  filter: invert(0%);
+  transition: filter 0.2s ease;
+}
+
+html[data-theme="dark"] .theme-icon {
+  filter: invert(100%);
+}
+
+/* Theme toggle preview on hover - shows opposite theme colors */
+.theme-toggle.preview {
+  background-color: var(--color-opposite-button-hover);
+  border-color: var(--color-opposite-button-border-hover);
+}
+
+.theme-toggle.preview .theme-icon {
+  filter: invert(100%);
+}
+
+html[data-theme="dark"] .theme-toggle.preview .theme-icon {
+  filter: invert(0%);
+}
+
+.download-btn {
+  background: var(--color-button-bg);
+  border: 2px solid var(--color-border);
+  color: var(--color-text);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+}
+
+.download-btn:not(:disabled):hover {
+  background-color: var(--color-button-hover);
+  border-color: var(--color-button-border-hover);
+}
+
+.download-btn:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.download-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.download-icon {
+  width: 24px;
+  height: 24px;
+  filter: invert(0%);
+  transition: filter 0.2s ease;
+}
+
+html[data-theme="dark"] .download-icon {
+  filter: invert(100%);
 }
 
 /* ============================================================================

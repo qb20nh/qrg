@@ -3,77 +3,9 @@
  * Handles QR code generation and display for the current tab URL
  */
 
-import { generateQRCode } from '../shared/qr-loader.js';
-
-// Theme constants
-const THEME_STORAGE_KEY = 'theme-preference';
-const DARK_THEME = 'dark';
-const LIGHT_THEME = 'light';
-
-// ============================================================================
-// Theme Management
-// ============================================================================
-
-/**
- * Initialize theme from storage and apply it
- */
-async function initializeTheme() {
-  const stored = await chrome.storage.local.get(THEME_STORAGE_KEY);
-  const theme = stored[THEME_STORAGE_KEY] || LIGHT_THEME;
-  applyTheme(theme);
-}
-
-/**
- * Apply theme to the document and update extension icon
- */
-function applyTheme(theme, useTransition = false) {
-  const updateTheme = () => {
-    const html = document.documentElement;
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = document.querySelector('.theme-icon');
-    const qrCanvas = document.getElementById('qr-canvas');
-    
-    if (theme === DARK_THEME) {
-      html.setAttribute('data-theme', DARK_THEME);
-      themeIcon.textContent = '🌙';
-      themeToggle.title = 'Toggle light mode';
-      // Invert canvas colors for dark theme
-      if (qrCanvas) {
-        qrCanvas.style.filter = 'invert(1)';
-      }
-    } else {
-      html.removeAttribute('data-theme');
-      themeIcon.textContent = '☀️';
-      themeToggle.title = 'Toggle dark mode';
-      // Remove filter for light theme
-      if (qrCanvas) {
-        qrCanvas.style.filter = '';
-      }
-    }
-  };
-
-  // Use View Transitions API if supported and requested
-  if (useTransition && document.startViewTransition) {
-    document.startViewTransition(() => updateTheme());
-  } else {
-    updateTheme();
-  }
-}
-
-/**
- * Toggle between themes
- */
-async function toggleTheme() {
-  const html = document.documentElement;
-  const currentTheme = html.getAttribute('data-theme') || LIGHT_THEME;
-  const newTheme = currentTheme === DARK_THEME ? LIGHT_THEME : DARK_THEME;
-  
-  // Save preference
-  await chrome.storage.local.set({ [THEME_STORAGE_KEY]: newTheme });
-  
-  // Apply new theme with transition (this will apply filter to canvas)
-  applyTheme(newTheme, true);
-}
+import { generateQRCode } from '../shared/qr.js';
+import { initializeTheme, toggleTheme } from '../shared/theme.js';
+import { DARK_THEME, LIGHT_THEME, LIGHT_THEME_COLORS, DARK_THEME_COLORS } from '../shared/config.js';
 
 // ============================================================================
 // Canvas Scaling
@@ -131,6 +63,15 @@ function isValidWebUrl(url) {
 // ============================================================================
 
 /**
+ * Set download button enabled/disabled state
+ * @param {boolean} enabled - Whether the button should be enabled
+ */
+function setDownloadButtonEnabled(enabled) {
+  const downloadBtn = document.getElementById('download-btn');
+  downloadBtn.disabled = !enabled;
+}
+
+/**
  * Display an error message
  * @param {string} message - The error message to display
  */
@@ -141,6 +82,8 @@ function showError(message) {
   qrDisplay.style.display = 'none';
   errorMessage.style.display = 'block';
   errorMessage.textContent = message;
+  
+  setDownloadButtonEnabled(false);
 }
 
 /**
@@ -171,23 +114,142 @@ function displayQRCode(data) {
     // Calculate pixel-perfect scaling to fit available space
     // Wait for next frame to ensure layout is complete
     requestAnimationFrame(updateCanvasScale);
+    
+    setDownloadButtonEnabled(true);
   } catch (error) {
     console.error('Error generating QR code:', error);
     showError('Failed to generate QR code. Please try again.');
   }
 }
 
+/**
+ * Download the QR code as a PNG image
+ */
+function downloadQRCode() {
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas || !canvas.width) {
+    console.warn('QR code canvas not available for download');
+    return;
+  }
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]) return;
+    
+    try {
+      // Get current theme and corresponding colors from config
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme') || LIGHT_THEME;
+      const themeColors = currentTheme === DARK_THEME ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
+      const bgColor = themeColors.bg;
+      
+      // Get the QR code data and scale settings
+      const qrSize = canvas.width;
+      const scale = 4;
+      const padding = (qrSize / 8) * scale; // Padding scaled 4x
+      const downloadSize = (qrSize * scale) + (padding * 2);
+      
+      // Prepare download canvas with padding and solid background
+      downloadCanvas.width = downloadSize;
+      downloadCanvas.height = downloadSize;
+      const ctx = downloadCanvasCtx;
+      
+      // Fill with background color from config
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, downloadSize, downloadSize);
+      
+      if (currentTheme === DARK_THEME) {
+        // Prepare temporary canvas for inversion
+        invertCanvas.width = qrSize;
+        invertCanvas.height = qrSize;
+        const tempCtx = invertCanvasCtx;
+        
+        // Draw original QR code
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // Invert only the QR code pixels
+        const imageData = tempCtx.getImageData(0, 0, qrSize, qrSize);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 255 - data[i];     // R
+          data[i + 1] = 255 - data[i + 1]; // G
+          data[i + 2] = 255 - data[i + 2]; // B
+          // Keep alpha as is
+        }
+        tempCtx.putImageData(imageData, 0, 0);
+        
+        // Draw the inverted QR code scaled and positioned with padding
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(invertCanvas, padding, padding, qrSize * scale, qrSize * scale);
+      } else {
+        // Draw the QR code scaled and positioned with padding (light mode)
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(canvas, padding, padding, qrSize * scale, qrSize * scale);
+      }
+      
+      // Convert to blob and download
+      downloadCanvas.toBlob((blob) => {
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        // Create filename from current URL and full timestamp
+        const url = new URL(tabs[0].url);
+        const hostname = url.hostname.replace(/www\./, '');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const filename = `qrg-${hostname}-${timestamp}.png`;
+        
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+      });
+    } catch (error) {
+      console.error('Error downloading QR code:', error);
+    }
+  });
+}
+
 // ============================================================================
 // Initialization
 // ============================================================================
+
+// Reusable canvas elements for download operations
+let downloadCanvas = null;
+let downloadCanvasCtx = null;
+let invertCanvas = null;
+let invertCanvasCtx = null;
+
+/**
+ * Initialize reusable canvas elements for download operations
+ */
+function initializeDownloadCanvases() {
+  downloadCanvas = document.createElement('canvas');
+  downloadCanvasCtx = downloadCanvas.getContext('2d');
+  
+  invertCanvas = document.createElement('canvas');
+  invertCanvasCtx = invertCanvas.getContext('2d');
+}
 
 /**
  * Setup event listeners
  */
 function setupEventListeners() {
   const themeToggle = document.getElementById('theme-toggle');
+  const downloadBtn = document.getElementById('download-btn');
   themeToggle.addEventListener('click', toggleTheme);
+  downloadBtn.addEventListener('click', downloadQRCode);
   window.addEventListener('resize', updateCanvasScale);
+  
+  // Show the icon for the mode we're changing TO on hover
+  themeToggle.addEventListener('mouseenter', () => {
+    themeToggle.classList.add('preview');
+  });
+  
+  // Restore the current theme icon on mouse leave
+  themeToggle.addEventListener('mouseleave', () => {
+    themeToggle.classList.remove('preview');
+  });
 }
 
 /**
@@ -195,6 +257,7 @@ function setupEventListeners() {
  */
 async function init() {
   await initializeTheme();
+  initializeDownloadCanvases();
   setupEventListeners();
   
   // Get current tab URL

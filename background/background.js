@@ -3,10 +3,7 @@
  * Handles extension lifecycle events and icon theme management
  */
 
-// Theme constants
-const THEME_STORAGE_KEY = 'theme-preference';
-const DARK_THEME = 'dark';
-const LIGHT_THEME = 'light';
+import { THEME_STORAGE_KEY, DARK_THEME, LIGHT_THEME } from '../shared/config.js';
 
 /**
  * Update extension icon based on theme

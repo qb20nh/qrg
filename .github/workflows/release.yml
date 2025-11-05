@@ -36,27 +36,40 @@ jobs:
             README.md \
             -x "*.git*" "*.DS_Store"
       
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          
+          # Extract changelog section for this version
+          # Find the section starting with "## [VERSION]" and capture until the next "## [" or EOF
+          CHANGELOG_SECTION=$(awk "/^## \[$VERSION\]/,/^## \[/" CHANGELOG.md | sed '$ d' | sed '1d')
+          
+          # Remove leading/trailing whitespace
+          CHANGELOG_SECTION=$(echo "$CHANGELOG_SECTION" | sed -e '1{/^[[:space:]]*$/d;}' -e '${/^[[:space:]]*$/d;}')
+          
+          # Store in output variable (handle multiline)
+          {
+            echo "content<<EOF"
+            echo "$CHANGELOG_SECTION"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+      
       - name: Generate release notes
         id: release_notes
         run: |
           cat > release_notes.md << 'EOF'
-          ## qrg Chrome Extension v${{ steps.version.outputs.VERSION }}
+          ## Changes in this release
           
-          ### Installation
+          ${{ steps.changelog.outputs.content }}
+          
+          ## Installation
           
           1. Download `qrg-v${{ steps.version.outputs.VERSION }}.zip`
           2. Extract the ZIP file
           3. Open Chrome and go to `chrome://extensions/`
           4. Enable "Developer mode"
           5. Click "Load unpacked" and select the extracted folder
-          
-          ### Features
-          
-          - 🔗 Generate QR codes for web pages (http/https URLs)
-          - 🌓 Dark and light theme support
-          - 🎨 Pixel-perfect QR code rendering
-          - ⚡ Fast and lightweight (~4KB QR library)
-          - 🔒 Privacy-focused (no external requests)
           EOF
       
       - name: Create GitHub Release
