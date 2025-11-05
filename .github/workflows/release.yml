@@ -41,12 +41,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           
-          # Extract changelog section for this version
-          # Find the section starting with "## [VERSION]" and capture until the next "## [" or EOF
-          CHANGELOG_SECTION=$(awk "/^## \[$VERSION\]/,/^## \[/" CHANGELOG.md | sed '$ d' | sed '1d')
-          
-          # Remove leading/trailing whitespace
-          CHANGELOG_SECTION=$(echo "$CHANGELOG_SECTION" | sed -e '1{/^[[:space:]]*$/d;}' -e '${/^[[:space:]]*$/d;}')
+          # Extract section between version headers, remove header and next section header
+          CHANGELOG_SECTION=$(sed -n "/^## \[$VERSION\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' | sed '/./,$!d')
           
           # Store in output variable (handle multiline)
           {
@@ -55,6 +51,17 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
       
+      - name: Detect prerelease
+        id: prerelease
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # Mark as prerelease if version contains: -alpha, -beta, -rc, -test, -dev, etc.
+          if [[ "$VERSION" =~ - ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Generate release notes
         id: release_notes
         run: |
@@ -79,7 +86,7 @@ jobs:
           body_path: release_notes.md
           files: dist/qrg-v${{ steps.version.outputs.VERSION }}.zip
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
