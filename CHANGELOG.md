@@ -7,15 +7,11 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.1.2-test] - 2025-11-05
-
-### Added
-
-- Test release for workflow validation
+## [1.1.2] - 2025-11-05
 
 ### Changed
 
-- Testing changelog extraction in release workflow
+- Improved release workflow with better changelog extraction and prerelease detection
 
 ## [1.1.1] - 2025-11-05
 
