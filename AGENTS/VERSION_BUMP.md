@@ -2,15 +2,29 @@
 
 This document provides step-by-step instructions for properly bumping the version and maintaining the changelog.
 
+## Philosophy: Single-Commit Releases
+
+Each version release should be **one atomic commit** that includes:
+- Feature/fix code changes
+- Updated CHANGELOG.md with the new version section
+- Updated manifest.json with the new version number
+
+This approach:
+- ✅ Keeps git history clean (one commit per version)
+- ✅ Makes it easy to see exactly what changed in each release
+- ✅ Ensures the version tag points to a complete, self-contained release
+- ✅ Simplifies reverting a release if needed
+
+❌ Avoid creating separate commits for "feature work" and "version bump" - they should be together.
+
 ## Prerequisites
 
 Before starting:
-1. All feature work must be **committed** to git
-2. No uncommitted changes except changelog and manifest modifications
-3. Verify current version in `manifest.json`
+1. Verify current version in `manifest.json`
+2. Review what changes need to be released
 
 ```bash
-git status  # Should show clean working directory or only expected changes
+git status  # Check current working directory state
 ```
 
 ## Steps to Bump Version
@@ -26,11 +40,14 @@ git log <LAST_TAG>..HEAD --oneline
 # Example: to see changes since v1.1.0
 git log v1.1.0..HEAD --oneline
 
-# View detailed diff since last tag
+# View detailed diff since last tag (including uncommitted changes)
 git diff <LAST_TAG>..HEAD
+git diff  # View any uncommitted changes
 ```
 
 Use this information to determine what type of version bump is needed.
+
+**Note:** If you have uncommitted feature work, you'll include the CHANGELOG.md and manifest.json updates in the same commit as the feature changes (see Step 5).
 
 ### 2. Determine New Version
 
@@ -82,19 +99,31 @@ Change the version field to match:
 }
 ```
 
-### 5. Commit Changes
+### 5. Commit All Changes Together
 
 **Rule:** Commit message must describe what changed, not just "bump version"
 
+**Important:** Include the CHANGELOG.md and manifest.json updates in the same commit as your feature work. This creates a single, atomic commit for the version release.
+
 Examples:
-- ✅ `Rename package name for SEO`
-- ✅ `Add QR code download feature`
+- ✅ `Add Alt+Q keyboard shortcut (v1.1.3)`
+- ✅ `Add QR code download feature (v1.2.0)`
+- ✅ `Fix theme flashing on load (v1.1.1)`
 - ❌ `Bump version to 1.1.1`
 - ❌ `Update version`
 
 ```bash
+# Stage all changes: feature code + CHANGELOG + manifest
+git add .
+git commit -m "Add Alt+Q keyboard shortcut (v1.1.3)"
+```
+
+**If features were already committed:** You can amend the last commit to include the version updates:
+```bash
 git add CHANGELOG.md manifest.json
-git commit -m "Rename package name for SEO"
+git commit --amend --no-edit
+# Or with an updated message:
+git commit --amend -m "Add Alt+Q keyboard shortcut (v1.1.3)"
 ```
 
 ### 6. Create Git Tag
@@ -164,7 +193,7 @@ git tag -a v1.1.1 -m "Release version 1.1.1"  # Create tag on current HEAD
 **Problem:** Tag created but changelog/manifest changes not committed
 **Solution:**
 ```bash
-git add CHANGELOG.md manifest.json
+git add CHANGELOG.md manifest.json [and other feature files]
 git commit -m "Descriptive message (vX.Y.Z)"
 git tag -d vX.Y.Z
 git tag -a vX.Y.Z -m "Release version X.Y.Z"
@@ -189,12 +218,12 @@ The GitHub Actions workflow (`.github/workflows/release.yml`) will:
 
 | Step | Command | Notes |
 |------|---------|-------|
-| Prerequisites | `git status` | Should show clean working directory |
-| 1. Gather changes | `git log v<LAST_VERSION>..HEAD --oneline` | Review changes since last release |
+| Prerequisites | `git status` | Check working directory state |
+| 1. Gather changes | `git log v<LAST_VERSION>..HEAD --oneline` and `git diff` | Review changes since last release |
 | 2. Determine version | Manual | Use Semantic Versioning rules |
 | 3. Update changelog | Edit `CHANGELOG.md` | Add new version section with user-facing changes |
 | 4. Update manifest | Edit `manifest.json` | Update version field |
-| 5. Commit | `git commit -m "Descriptive message"` | Describe what changed, not "bump version" |
+| 5. Commit all | `git add . && git commit -m "Descriptive message (vX.Y.Z)"` | Include features + CHANGELOG + manifest in ONE commit |
 | 6. Tag | `git tag -a vX.Y.Z -m "Release version X.Y.Z"` | Annotated tag, exact format required |
 | 7. Verify | `git log --oneline --all --decorate -5` | Confirm tag on correct commit |
 | Push | `git push origin main --tags` | Triggers GitHub Actions automation |
