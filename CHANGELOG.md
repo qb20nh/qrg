@@ -7,6 +7,16 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.3] - 2025-11-05
+
+### Added
+
+- Alt+Q keyboard shortcut to open QR code popup
+
+### Fixed
+
+- Theme transition flashing (FOUC) on popup load
+
 ## [1.1.2] - 2025-11-05
 
 ### Changed
